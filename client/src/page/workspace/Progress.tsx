@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ComponentProps } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, formatDistanceToNowStrict, subDays } from "date-fns";
 import {
@@ -26,12 +26,7 @@ import {
   WorkspaceFileActivityLogType,
   WorkspaceFileActivityResponseType,
 } from "@/types/api.type";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -97,6 +92,35 @@ const getDateRange = (days: number) => {
   };
 };
 
+// ✅ Fix: Badge variant must be a specific union, not any string
+type BadgeVariant = ComponentProps<typeof Badge>["variant"];
+const toBadgeVariant = (value?: string | null): BadgeVariant => {
+  switch (value) {
+    case "BACKLOG":
+    case "TODO":
+    case "IN_PROGRESS":
+    case "IN_REVIEW":
+    case "DONE":
+    case "LOW":
+    case "MEDIUM":
+    case "HIGH":
+    case "URGENT":
+      return value;
+    default:
+      return "default";
+  }
+};
+
+// Used to derive task/project label for worklogs (since worklog type only has taskId)
+type EmployeeTaskLite = {
+  _id?: string;
+  taskId?: string;
+  title?: string;
+  taskCode?: string;
+  status?: string | null;
+  project?: { name?: string | null } | null;
+};
+
 const Progress = () => {
   const workspaceId = useWorkspaceId();
   const [presetDays, setPresetDays] = useState(30);
@@ -119,12 +143,7 @@ const Progress = () => {
 
   const { data: summaryData, isPending: isSummaryLoading } =
     useQuery<ProgressSummaryResponseType>({
-      queryKey: [
-        "progress-summary",
-        workspaceId,
-        dateRange.from,
-        dateRange.to,
-      ],
+      queryKey: ["progress-summary", workspaceId, dateRange.from, dateRange.to],
       queryFn: () =>
         getWorkspaceProgressSummaryQueryFn({ workspaceId, ...dateRange }),
       enabled: !!workspaceId,
@@ -185,10 +204,12 @@ const Progress = () => {
     () => clientStats?.projectsByClient.slice(0, 10) ?? [],
     [clientStats]
   );
+
   const tasksByStatus = useMemo(
     () => taskStats?.tasksByStatus ?? [],
     [taskStats]
   );
+
   const topEmployeesByHours = useMemo(
     () =>
       [...employeeStats]
@@ -227,7 +248,13 @@ const Progress = () => {
       }
       return true;
     });
-  }, [fileActivityData?.logs, fileActionFilter, fileFromDate, fileToDate, fileUserFilter]);
+  }, [
+    fileActivityData?.logs,
+    fileActionFilter,
+    fileFromDate,
+    fileToDate,
+    fileUserFilter,
+  ]);
 
   const fileActivityUsers = useMemo(() => {
     const map = new Map<string, WorkspaceFileActivityLogType["user"]>();
@@ -255,6 +282,28 @@ const Progress = () => {
   const selectedEmployee = employeeStats.find(
     (employee) => employee.userId === selectedEmployeeId
   );
+
+  // ✅ Fix: derive taskTitle/taskCode/projectName for workLogs using tasks list
+  const taskMetaById = useMemo(() => {
+    const map = new Map<
+      string,
+      { title?: string; taskCode?: string; projectName?: string }
+    >();
+
+    const tasks = (employeeData?.tasks ?? []) as unknown as EmployeeTaskLite[];
+
+    tasks.forEach((t) => {
+      const id = t.taskId || t._id;
+      if (!id) return;
+      map.set(id, {
+        title: t.title,
+        taskCode: t.taskCode,
+        projectName: t.project?.name ?? undefined,
+      });
+    });
+
+    return map;
+  }, [employeeData?.tasks]);
 
   return (
     <div className="w-full h-full flex-col space-y-8 pt-3">
@@ -374,9 +423,7 @@ const Progress = () => {
         </Card>
         <Card className="shadow-none">
           <CardHeader>
-            <CardTitle className="text-sm font-medium">
-              Tasks by status
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Tasks by status</CardTitle>
           </CardHeader>
           <CardContent className="h-72">
             {tasksByStatus.length === 0 ? (
@@ -445,13 +492,9 @@ const Progress = () => {
       <Card className="shadow-none">
         <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <CardTitle className="text-sm font-medium">
-              Employee activity
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Employee activity</CardTitle>
             <p className="text-xs text-muted-foreground">
-              {isSummaryLoading
-                ? "Loading summary..."
-                : `${employeeStats.length} employees`}
+              {isSummaryLoading ? "Loading summary..." : `${employeeStats.length} employees`}
             </p>
           </div>
           <Input
@@ -465,46 +508,25 @@ const Progress = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead
-                  onClick={() => handleSort("name")}
-                  className="cursor-pointer"
-                >
+                <TableHead onClick={() => handleSort("name")} className="cursor-pointer">
                   Employee
                 </TableHead>
-                <TableHead
-                  onClick={() => handleSort("totalAssigned")}
-                  className="cursor-pointer"
-                >
+                <TableHead onClick={() => handleSort("totalAssigned")} className="cursor-pointer">
                   Assigned
                 </TableHead>
-                <TableHead
-                  onClick={() => handleSort("done")}
-                  className="cursor-pointer"
-                >
+                <TableHead onClick={() => handleSort("done")} className="cursor-pointer">
                   Done
                 </TableHead>
-                <TableHead
-                  onClick={() => handleSort("pending")}
-                  className="cursor-pointer"
-                >
+                <TableHead onClick={() => handleSort("pending")} className="cursor-pointer">
                   Pending
                 </TableHead>
-                <TableHead
-                  onClick={() => handleSort("totalHours")}
-                  className="cursor-pointer"
-                >
+                <TableHead onClick={() => handleSort("totalHours")} className="cursor-pointer">
                   Total hours
                 </TableHead>
-                <TableHead
-                  onClick={() => handleSort("totalPages")}
-                  className="cursor-pointer"
-                >
+                <TableHead onClick={() => handleSort("totalPages")} className="cursor-pointer">
                   Pages
                 </TableHead>
-                <TableHead
-                  onClick={() => handleSort("lastActiveAt")}
-                  className="cursor-pointer"
-                >
+                <TableHead onClick={() => handleSort("lastActiveAt")} className="cursor-pointer">
                   Last active
                 </TableHead>
               </TableRow>
@@ -512,10 +534,7 @@ const Progress = () => {
             <TableBody>
               {filteredEmployees.length === 0 && (
                 <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="text-center text-sm text-muted-foreground"
-                  >
+                  <TableCell colSpan={7} className="text-center text-sm text-muted-foreground">
                     No employees found.
                   </TableCell>
                 </TableRow>
@@ -526,9 +545,7 @@ const Progress = () => {
                   className="cursor-pointer"
                   onClick={() => setSelectedEmployeeId(employee.userId)}
                 >
-                  <TableCell className="font-medium">
-                    {employee.name}
-                  </TableCell>
+                  <TableCell className="font-medium">{employee.name}</TableCell>
                   <TableCell>{employee.totalAssigned}</TableCell>
                   <TableCell>{employee.done}</TableCell>
                   <TableCell>{employee.pending}</TableCell>
@@ -536,12 +553,7 @@ const Progress = () => {
                   <TableCell>{employee.totalPages}</TableCell>
                   <TableCell>
                     {employee.lastActiveAt
-                      ? formatDistanceToNowStrict(
-                          new Date(employee.lastActiveAt),
-                          {
-                            addSuffix: true,
-                          }
-                        )
+                      ? formatDistanceToNowStrict(new Date(employee.lastActiveAt), { addSuffix: true })
                       : "—"}
                   </TableCell>
                 </TableRow>
@@ -554,9 +566,7 @@ const Progress = () => {
       <Card className="shadow-none">
         <CardHeader className="flex flex-col gap-4">
           <div>
-            <CardTitle className="text-sm font-medium">
-              File Activity (Last 7 days)
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">File Activity (Last 7 days)</CardTitle>
             <p className="text-xs text-muted-foreground">
               Track uploads, downloads, and folder creation across the workspace.
             </p>
@@ -577,6 +587,7 @@ const Progress = () => {
                 )}
               </SelectContent>
             </Select>
+
             <Select value={fileActionFilter} onValueChange={setFileActionFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="All actions" />
@@ -589,6 +600,7 @@ const Progress = () => {
                 <SelectItem value="CREATE_FOLDER">Create folder</SelectItem>
               </SelectContent>
             </Select>
+
             <Input
               type="date"
               value={fileFromDate}
@@ -601,6 +613,7 @@ const Progress = () => {
             />
           </div>
         </CardHeader>
+
         <CardContent>
           <Table>
             <TableHeader>
@@ -616,24 +629,20 @@ const Progress = () => {
             <TableBody>
               {isFileActivityLoading && (
                 <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-center text-sm text-muted-foreground"
-                  >
+                  <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                     Loading file activity...
                   </TableCell>
                 </TableRow>
               )}
+
               {!isFileActivityLoading && fileActivityLogs.length === 0 && (
                 <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-center text-sm text-muted-foreground"
-                  >
+                  <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                     No file activity found for the selected filters.
                   </TableCell>
                 </TableRow>
               )}
+
               {fileActivityLogs.map((log) => (
                 <TableRow key={log._id}>
                   <TableCell className="font-medium">
@@ -648,9 +657,7 @@ const Progress = () => {
                     {log.size ? `${(log.size / 1024).toFixed(1)} KB` : "—"}
                   </TableCell>
                   <TableCell>
-                    {log.createdAt
-                      ? format(new Date(log.createdAt), "PPp")
-                      : "—"}
+                    {log.createdAt ? format(new Date(log.createdAt), "PPp") : "—"}
                   </TableCell>
                 </TableRow>
               ))}
@@ -667,33 +674,30 @@ const Progress = () => {
           <DialogHeader>
             <DialogTitle>{selectedEmployee?.name ?? "Employee details"}</DialogTitle>
           </DialogHeader>
+
           <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-3">
               <Card className="shadow-none">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Assigned
-                  </CardTitle>
+                  <CardTitle className="text-sm font-medium">Assigned</CardTitle>
                 </CardHeader>
                 <CardContent className="text-2xl font-semibold">
                   {employeeData?.employee.totalAssigned ?? 0}
                 </CardContent>
               </Card>
+
               <Card className="shadow-none">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Completed
-                  </CardTitle>
+                  <CardTitle className="text-sm font-medium">Completed</CardTitle>
                 </CardHeader>
                 <CardContent className="text-2xl font-semibold">
                   {employeeData?.employee.done ?? 0}
                 </CardContent>
               </Card>
+
               <Card className="shadow-none">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total hours
-                  </CardTitle>
+                  <CardTitle className="text-sm font-medium">Total hours</CardTitle>
                 </CardHeader>
                 <CardContent className="text-2xl font-semibold">
                   {employeeData?.employee.totalHours ?? 0}
@@ -711,27 +715,22 @@ const Progress = () => {
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
+
                 <TableBody>
                   {(employeeData?.tasks ?? []).length === 0 && (
                     <TableRow>
-                      <TableCell
-                        colSpan={3}
-                        className="text-center text-sm text-muted-foreground"
-                      >
+                      <TableCell colSpan={3} className="text-center text-sm text-muted-foreground">
                         No tasks assigned in range.
                       </TableCell>
                     </TableRow>
                   )}
-                  {(employeeData?.tasks ?? []).map((task) => (
-                    <TableRow key={task.taskCode ?? task.title}>
-                      <TableCell className="font-medium">
-                        {task.title}
-                      </TableCell>
+
+                  {(employeeData?.tasks ?? []).map((task: any) => (
+                    <TableRow key={task.taskCode ?? task.title ?? task._id ?? task.taskId}>
+                      <TableCell className="font-medium">{task.title}</TableCell>
+                      <TableCell>{task.project?.name ?? "Unassigned"}</TableCell>
                       <TableCell>
-                        {task.project?.name ?? "Unassigned"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={task.status}>{task.status}</Badge>
+                        <Badge variant={toBadgeVariant(task.status)}>{task.status}</Badge>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -752,41 +751,44 @@ const Progress = () => {
                     <TableHead>Remarks</TableHead>
                   </TableRow>
                 </TableHeader>
+
                 <TableBody>
                   {isEmployeeLoading && (
                     <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="text-center text-sm text-muted-foreground"
-                      >
+                      <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                         Loading work logs...
                       </TableCell>
                     </TableRow>
                   )}
-                  {(employeeData?.workLogs ?? []).length === 0 &&
-                    !isEmployeeLoading && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={5}
-                          className="text-center text-sm text-muted-foreground"
-                        >
-                          No work logs in range.
-                        </TableCell>
-                      </TableRow>
-                    )}
+
+                  {(employeeData?.workLogs ?? []).length === 0 && !isEmployeeLoading && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
+                        No work logs in range.
+                      </TableCell>
+                    </TableRow>
+                  )}
+
                   {(employeeData?.workLogs ?? []).map((log) => (
                     <TableRow key={log._id}>
                       <TableCell>
-                        {log.activityAt
-                          ? format(new Date(log.activityAt), "PP")
-                          : "—"}
+                        {log.activityAt ? format(new Date(log.activityAt), "PP") : "—"}
                       </TableCell>
+
                       <TableCell className="font-medium">
-                        {log.taskTitle ?? log.taskCode ?? "—"}
+                        {(() => {
+                          const meta = taskMetaById.get(log.taskId);
+                          return meta?.title ?? meta?.taskCode ?? "—";
+                        })()}
                       </TableCell>
-                      <TableCell>{log.projectName ?? "—"}</TableCell>
+
+                      <TableCell>
+                        {taskMetaById.get(log.taskId)?.projectName ?? "—"}
+                      </TableCell>
+
                       <TableCell>{formatDuration(log.durationMinutes)}</TableCell>
                       <TableCell>{log.pagesCompleted ?? 0}</TableCell>
+
                       <TableCell className="max-w-xs truncate">
                         {log.remarks ?? "—"}
                       </TableCell>
