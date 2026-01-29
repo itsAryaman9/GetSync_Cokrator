@@ -9,6 +9,6 @@ export const registerSchema=z.object({
 });
 
 export const loginSchema=z.object({
-    email:emailSchema,
+    employeeCode:z.string().trim().min(1).max(255),
     password:passwordSchema
 })
