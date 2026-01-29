@@ -48,13 +48,16 @@ passport.use(
 passport.use(
   new LocalStrategy(
     {
-      usernameField: "email",
+      usernameField: "employeeCode",
       passwordField: "password",
       session: true,
     },
-    async (email, password, done) => {
+    async (employeeCode, password, done) => {
       try {
-        const user = await verifyUserService({ email, password });
+        const user = await verifyUserService({
+          employeeCode,
+          password,
+        });
         return done(null, user);
       } catch (error: any) {
         return done(error, false, { message: error?.message });
@@ -66,13 +69,16 @@ passport.use(
 passport.use(
   new LocalStrategy(
     {
-      usernameField: "email",
+      usernameField: "employeeCode",
       passwordField: "password",
       session: false,
     },
-    async (email, password, done) => {
+    async (employeeCode, password, done) => {
       try {
-        const user = await verifyUserService({ email, password });
+        const user = await verifyUserService({
+          employeeCode,
+          password,
+        });
         return done(null, user);
       } catch (error: any) {
         return done(error, false, { message: error?.message });

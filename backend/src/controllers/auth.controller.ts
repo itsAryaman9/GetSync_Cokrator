@@ -38,6 +38,7 @@ export const registerUserController=asyncHandler(
 
 export const loginController = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
+    req.body.employeeCode = req.body.employeeCode ?? req.body.email;
     passport.authenticate(
       "local",
       (

@@ -37,7 +37,7 @@ const SignIn = () => {
   });
 
   const formSchema = z.object({
-    email: z.string().trim().min(1, {
+    employeeCode: z.string().trim().min(1, {
       message: "Employee code is required",
     }),
     password: z.string().trim().min(1, {
@@ -48,7 +48,7 @@ const SignIn = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
+      employeeCode: "",
       password: "",
     },
   });
@@ -99,7 +99,7 @@ const SignIn = () => {
                       <div className="grid gap-2">
                         <FormField
                           control={form.control}
-                          name="email"
+                          name="employeeCode"
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="dark:text-[#f1f7feb5] text-sm">

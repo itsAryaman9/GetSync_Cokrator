@@ -267,17 +267,17 @@ export const registerUserService = async (body: {
 };
 
 export const verifyUserService = async ({
-  email,
+  employeeCode,
   password,
   provider = ProviderEnum.EMAIL,
 }: {
-  email: string;
+  employeeCode: string;
   password: string;
   provider?: string;
 }) => {
   const credential = EMPLOYEE_CREDENTIALS.find(
     (employee) =>
-      employee.employeeCode === email && employee.password === password
+      employee.employeeCode === employeeCode && employee.password === password
   );
 
   if (!credential) {
