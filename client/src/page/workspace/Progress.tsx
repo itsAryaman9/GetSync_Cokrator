@@ -568,7 +568,7 @@ const Progress = () => {
           <div>
             <CardTitle className="text-sm font-medium">File Activity (Last 7 days)</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Track uploads, downloads, and folder creation across the workspace.
+              Track uploads, downloads, creation, and deletions across the workspace.
             </p>
           </div>
           <div className="grid gap-3 md:grid-cols-4">
@@ -598,6 +598,8 @@ const Progress = () => {
                 <SelectItem value="UPLOAD">Upload</SelectItem>
                 <SelectItem value="DOWNLOAD">Download</SelectItem>
                 <SelectItem value="CREATE_FOLDER">Create folder</SelectItem>
+                <SelectItem value="DELETE_FILE">Delete file</SelectItem>
+                <SelectItem value="DELETE_FOLDER">Delete folder</SelectItem>
               </SelectContent>
             </Select>
 

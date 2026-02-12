@@ -209,6 +209,54 @@ export const createWorkspaceFolderService = async ({
   return { name: safeName };
 };
 
+
+export const deleteWorkspaceItemService = async ({
+  workspaceId,
+  userId,
+  relPath,
+}: {
+  workspaceId: string;
+  userId: string;
+  relPath: string;
+}) => {
+  const workspaceRoot = await ensureWorkspaceRoot(workspaceId);
+  const { targetAbs } = resolveWorkspacePath(workspaceRoot, relPath);
+
+  const stat = await fs.stat(targetAbs).catch(() => {
+    throw new NotFoundException("File or folder not found");
+  });
+
+  const itemName = path.basename(targetAbs);
+  const parentPath = path.dirname(relPath) === "." ? "" : path.dirname(relPath);
+
+  if (stat.isDirectory()) {
+    await fs.rm(targetAbs, { recursive: true, force: false });
+    await logFileAccess({
+      workspaceId,
+      userId,
+      action: FileAccessAction.DELETE_FOLDER,
+      path: parentPath,
+      fileName: itemName,
+    });
+    return { type: "folder" as const, name: itemName };
+  }
+
+  if (stat.isFile()) {
+    await fs.unlink(targetAbs);
+    await logFileAccess({
+      workspaceId,
+      userId,
+      action: FileAccessAction.DELETE_FILE,
+      path: parentPath,
+      fileName: itemName,
+      size: stat.size,
+    });
+    return { type: "file" as const, name: itemName };
+  }
+
+  throw new BadRequestException("Unsupported item type");
+};
+
 export const listWorkspaceFileActivityService = async ({
   workspaceId,
   days,

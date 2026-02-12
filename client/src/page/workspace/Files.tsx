@@ -5,10 +5,12 @@ import {
   Folder,
   FolderPlus,
   MoreVertical,
+  Trash2,
   Upload,
 } from "lucide-react";
 import {
   createWorkspaceFolderMutationFn,
+  deleteWorkspaceItemMutationFn,
   downloadWorkspaceFileQueryFn,
   getWorkspaceFilesQueryFn,
   uploadWorkspaceFilesMutationFn,
@@ -131,6 +133,31 @@ const Files = () => {
     },
   });
 
+  const deleteItemMutation = useMutation({
+    mutationFn: (path: string) =>
+      deleteWorkspaceItemMutationFn({
+        workspaceId,
+        path,
+      }),
+    onSuccess: (response) => {
+      toast({
+        title: "Deleted",
+        description: response.message,
+        variant: "success",
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["workspace-files", workspaceId, currentPath],
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Delete failed",
+        description: "Unable to delete this item right now.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const breadcrumbSegments = useMemo(() => {
     if (!currentPath) return [];
     return currentPath.split("/").filter(Boolean);
@@ -179,6 +206,14 @@ const Files = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleDelete = (path: string, type: "file" | "folder") => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete this ${type}?`
+    );
+    if (!confirmed) return;
+    deleteItemMutation.mutate(path);
   };
 
   const handleFilesSelected = (files: FileList | null) => {
@@ -336,14 +371,18 @@ const Files = () => {
                         : "—"}
                     </TableCell>
                     <TableCell className="text-right">
-                      {!isFolder && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={deleteItemMutation.isPending}
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {!isFolder && (
                             <DropdownMenuItem
                               onClick={() =>
                                 handleDownload(itemPath, item.name)
@@ -351,9 +390,18 @@ const Files = () => {
                             >
                               Download
                             </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
+                          )}
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handleDelete(itemPath, isFolder ? "folder" : "file")
+                            }
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 );

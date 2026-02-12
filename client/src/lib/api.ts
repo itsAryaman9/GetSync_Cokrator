@@ -191,6 +191,22 @@ export const downloadWorkspaceFileQueryFn = async ({
   return response.data;
 };
 
+
+export const deleteWorkspaceItemMutationFn = async ({
+  workspaceId,
+  path,
+}: {
+  workspaceId: string;
+  path: string;
+}): Promise<{ message: string; deleted: { type: "file" | "folder"; name: string } }> => {
+  const params = new URLSearchParams();
+  params.set("path", path);
+  const response = await API.delete(
+    `/workspace/${workspaceId}/files?${params.toString()}`
+  );
+  return response.data;
+};
+
 export const getWorkspaceFileActivityQueryFn = async ({
   workspaceId,
   days = 7,

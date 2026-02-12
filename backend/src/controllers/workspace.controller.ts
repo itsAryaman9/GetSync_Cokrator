@@ -22,6 +22,7 @@ import {
 } from "../services/workspace.service";
 import {
   createWorkspaceFolderService,
+  deleteWorkspaceItemService,
   getWorkspaceFileDownloadService,
   listWorkspaceFileActivityService,
   listWorkspaceFilesService,
@@ -261,6 +262,31 @@ export const createWorkspaceFolderController = asyncHandler(
     return res.status(HTTPSTATUS.CREATED).json({
       message: "Folder created successfully",
       folder,
+    });
+  }
+);
+
+export const deleteWorkspaceItemController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const workspaceId = workspaceIdSchema.parse(req.params.id);
+    const userId = req.user?._id;
+    const pathQuery = filePathQuerySchema.parse(req.query.path as string);
+
+    if (!pathQuery) {
+      throw new BadRequestException("File or folder path is required");
+    }
+
+    await getMemberRoleInWorkspace(userId, workspaceId);
+
+    const deleted = await deleteWorkspaceItemService({
+      workspaceId,
+      userId,
+      relPath: pathQuery,
+    });
+
+    return res.status(HTTPSTATUS.OK).json({
+      message: `${deleted.type === "folder" ? "Folder" : "File"} deleted successfully`,
+      deleted,
     });
   }
 );

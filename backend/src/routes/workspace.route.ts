@@ -5,6 +5,7 @@ import {
   createWorkspaceController,
   createWorkspaceFolderController,
   deleteWorkspaceByIdController,
+  deleteWorkspaceItemController,
   downloadWorkspaceFileController,
   getAllWorkspacesUserIsMemberController,
   getWorkspaceAnalyticsController,
@@ -62,6 +63,7 @@ workspaceRoutes.post(
   uploadWorkspaceFilesController
 );
 workspaceRoutes.post("/:id/files/folder", createWorkspaceFolderController);
+workspaceRoutes.delete("/:id/files", deleteWorkspaceItemController);
 workspaceRoutes.get("/:id/file-activity", getWorkspaceFileActivityController);
 
 workspaceRoutes.get("/:id", getWorkspaceByIdController);

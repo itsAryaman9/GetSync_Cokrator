@@ -5,6 +5,8 @@ export enum FileAccessAction {
   DOWNLOAD = "DOWNLOAD",
   UPLOAD = "UPLOAD",
   CREATE_FOLDER = "CREATE_FOLDER",
+  DELETE_FILE = "DELETE_FILE",
+  DELETE_FOLDER = "DELETE_FOLDER",
 }
 
 export interface FileAccessLogDocument extends Document {
