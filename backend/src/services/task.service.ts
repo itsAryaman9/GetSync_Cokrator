@@ -91,7 +91,6 @@ export const updateTaskService = async (
   taskId: string,
   body: {
     taskTypeCode?: string;
-    title: string;
     description?: string;
     chapter?: string;
     pageRange?: string;

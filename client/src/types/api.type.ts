@@ -199,7 +199,6 @@ export type ProgressEmployeeResponseType = {
   };
   tasks: {
     taskCode?: string;
-    title: string;
     taskTypeCode?: string;
     taskTypeName?: string;
     status: string;
@@ -385,7 +384,6 @@ export type EditTaskPayloadType = {
   projectId: string;
   data: Partial<{
     taskTypeCode: string;
-    title: string;
     description: string;
     chapter: string;
     pageRange: string;

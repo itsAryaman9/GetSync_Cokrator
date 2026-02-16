@@ -23,7 +23,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "../../ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
@@ -72,7 +71,6 @@ export default function EditTaskForm({
 
   const formSchema = z.object({
     taskTypeCode: z.string().trim().min(1, { message: "Task type is required" }),
-    title: z.string().trim().min(1, { message: "Title is required" }),
     description: z.string().trim(),
     status: z.enum(Object.values(TaskStatusEnum) as [keyof typeof TaskStatusEnum]),
     priority: z.enum(
@@ -101,7 +99,6 @@ export default function EditTaskForm({
         }
       : {
           taskTypeCode: task?.taskTypeCode ?? "",
-          title: task?.title ?? "",
           description: task?.description ?? "",
           status: task?.status ?? "TODO",
           priority: task?.priority ?? "MEDIUM",
@@ -157,20 +154,6 @@ export default function EditTaskForm({
           <form className="space-y-3" onSubmit={form.handleSubmit(onSubmit)}>
             {!isStatusOnly ? (
               <>
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Task Title</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Task title" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 <FormField
                   control={form.control}
                   name="taskTypeCode"
