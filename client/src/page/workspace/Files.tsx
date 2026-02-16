@@ -49,6 +49,8 @@ import {
 } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useAuthContext } from "@/context/auth-provider";
+import { Permissions } from "@/constant";
 
 const formatBytes = (bytes?: number) => {
   if (!bytes) return "—";
@@ -65,6 +67,8 @@ const formatBytes = (bytes?: number) => {
 const Files = () => {
   const workspaceId = useWorkspaceId();
   const queryClient = useQueryClient();
+  const { hasPermission } = useAuthContext();
+  const canDeleteFiles = hasPermission(Permissions.MANAGE_WORKSPACE_SETTINGS);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [currentPath, setCurrentPath] = useState("");
   const [search, setSearch] = useState("");
@@ -209,6 +213,15 @@ const Files = () => {
   };
 
   const handleDelete = (path: string, type: "file" | "folder") => {
+    if (!canDeleteFiles) {
+      toast({
+        title: "Access denied",
+        description: "Only admins can delete files or folders.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const confirmed = window.confirm(
       `Are you sure you want to delete this ${type}?`
     );
@@ -343,6 +356,7 @@ const Files = () => {
                 const itemPath = currentPath
                   ? `${currentPath}/${item.name}`
                   : item.name;
+                const hasRowActions = !isFolder || canDeleteFiles;
                 return (
                   <TableRow key={itemPath}>
                     <TableCell>
@@ -371,6 +385,7 @@ const Files = () => {
                         : "—"}
                     </TableCell>
                     <TableCell className="text-right">
+                      {hasRowActions ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -391,17 +406,20 @@ const Files = () => {
                               Download
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuItem
-                            onClick={() =>
-                              handleDelete(itemPath, isFolder ? "folder" : "file")
-                            }
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
+                          {canDeleteFiles ? (
+                            <DropdownMenuItem
+                              onClick={() =>
+                                handleDelete(itemPath, isFolder ? "folder" : "file")
+                              }
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          ) : null}
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      ) : null}
                     </TableCell>
                   </TableRow>
                 );

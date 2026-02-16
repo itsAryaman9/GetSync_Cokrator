@@ -1,5 +1,5 @@
 import API from "./axios-client";
-import { AllMembersInWorkspaceResponseType, AllProjectPayloadType, AllProjectResponseType, AllTaskPayloadType, AllTaskResponseType, AllWorkspaceResponseType, AnalyticsResponseType, ChangeWorkspaceMemberRoleType, CreateProjectPayloadType, CreateTaskPayloadType, CreateWorkspaceResponseType, CreateWorkspaceType, CurrentUserResponseType, EditProjectPayloadType, EditTaskPayloadType, EditWorkspaceType, LoginResponseType, loginType, ProgressEmployeePayloadType, ProgressEmployeeResponseType, ProgressSummaryPayloadType, ProgressSummaryResponseType, ProjectByIdPayloadType, ProjectResponseType, registerType, StopTaskTimerPayloadType, TaskTimerPayloadType, TaskType, TaskTypesResponseType, WorkspaceByIdResponseType, WorkspaceFileActivityResponseType, WorkspaceFileListResponseType, WorkspaceFileUploadResponseType } from "@/types/api.type";
+import { AllMembersInWorkspaceResponseType, AllProjectPayloadType, AllProjectResponseType, AllTaskPayloadType, AllTaskResponseType, AllWorkspaceResponseType, AnalyticsResponseType, ChangeWorkspaceMemberRoleType, CreateProjectPayloadType, CreateTaskPayloadType, CreateWorkspaceResponseType, CreateWorkspaceType, CurrentUserResponseType, EditProjectPayloadType, EditTaskPayloadType, EditWorkspaceType, LoginResponseType, loginType, ProgressEmployeePayloadType, ProgressEmployeeResponseType, ProgressSummaryPayloadType, ProgressSummaryResponseType, ProjectByIdPayloadType, ProjectResponseType, registerType, StopAllTaskTimersPayloadType, StopTaskTimerPayloadType, TaskTimerPayloadType, TaskType, TaskTypesResponseType, WorkspaceByIdResponseType, WorkspaceFileActivityResponseType, WorkspaceFileListResponseType, WorkspaceFileUploadResponseType } from "@/types/api.type";
 
 export const loginMutationFn = async (
   data: loginType
@@ -349,6 +349,14 @@ export const stopTaskTimerMutationFn = async ({
   return response.data;
 };
 
+
+
+export const stopAllRunningTaskTimersMutationFn = async ({
+  workspaceId,
+}: StopAllTaskTimersPayloadType): Promise<{ message: string; stoppedCount: number }> => {
+  const response = await API.post(`/task/workspace/${workspaceId}/timer/stop-all`);
+  return response.data;
+};
 
 export const editTaskMutationFn = async ({
   taskId,

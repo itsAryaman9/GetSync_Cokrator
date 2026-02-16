@@ -4,13 +4,13 @@ import { DataTable } from "./table/table";
 import { useParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { Loader2, Square, X } from "lucide-react";
 import { DataTableFacetedFilter } from "./table/table-faceted-filter";
 import { priorities, statuses } from "./table/data";
 import useTaskTableFilter from "@/hooks/use-task-table-filter";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useWorkspaceId from "@/hooks/use-workspace-id";
-import { getAllTasksQueryFn, getTaskTypesQueryFn } from "@/lib/api";
+import { getAllTasksQueryFn, getTaskTypesQueryFn, stopAllRunningTaskTimersMutationFn } from "@/lib/api";
 import { TaskType } from "@/types/api.type";
 import useGetProjectsInWorkspaceQuery from "@/hooks/api/use-get-projects";
 import useGetWorkspaceMembers from "@/hooks/api/use-get-workspace-members";
@@ -18,6 +18,7 @@ import { getAvatarColor, getAvatarFallbackText } from "@/lib/helper";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuthContext } from "@/context/auth-provider";
 import { Permissions } from "@/constant";
+import { toast } from "@/hooks/use-toast";
 
 type Filters = ReturnType<typeof useTaskTableFilter>[0];
 type SetFilters = ReturnType<typeof useTaskTableFilter>[1];
@@ -39,6 +40,7 @@ const TaskTable = () => {
 
   const [filters, setFilters] = useTaskTableFilter();
   const workspaceId = useWorkspaceId();
+  const queryClient = useQueryClient();
   const columns = getColumns(projectId);
   const { user, hasPermission } = useAuthContext();
   const showAssignedFilter = hasPermission(Permissions.DELETE_TASK);
@@ -70,6 +72,28 @@ const TaskTable = () => {
   const tasks: TaskType[] = data?.tasks || [];
   const totalCount = data?.pagination.totalCount || 0;
 
+  const { mutate: stopAllRunningTimers, isPending: isStoppingAllTimers } =
+    useMutation({
+      mutationFn: () => stopAllRunningTaskTimersMutationFn({ workspaceId }),
+      onSuccess: (response) => {
+        queryClient.invalidateQueries({ queryKey: ["all-tasks", workspaceId] });
+        toast({
+          title: "Timers updated",
+          description: response.message,
+          variant: "success",
+        });
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Failed to stop timers",
+          description: error.message || "Please try again.",
+          variant: "destructive",
+        });
+      },
+    });
+
+  const runningTasksCount = tasks.filter((task) => task.isRunning).length;
+
   const handlePageChange = (page: number) => {
     setPageNumber(page);
   };
@@ -81,6 +105,24 @@ const TaskTable = () => {
 
   return (
     <div className="w-full relative">
+      {showAssignedFilter ? (
+        <div className="mb-3 flex justify-end">
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={isStoppingAllTimers || runningTasksCount === 0}
+            onClick={() => stopAllRunningTimers()}
+          >
+            {isStoppingAllTimers ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Square className="mr-2 h-4 w-4" />
+            )}
+            Stop All Running Tasks
+            {runningTasksCount > 0 ? ` (${runningTasksCount})` : ""}
+          </Button>
+        </div>
+      ) : null}
       <DataTable
         isLoading={isLoading}
         data={tasks}

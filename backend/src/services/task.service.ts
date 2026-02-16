@@ -90,7 +90,7 @@ export const updateTaskService = async (
   projectId: string,
   taskId: string,
   body: {
-    title: string;
+    taskTypeCode?: string;
     description?: string;
     chapter?: string;
     pageRange?: string;
@@ -116,11 +116,30 @@ export const updateTaskService = async (
     );
   }
 
+  const { taskTypeCode, ...restBody } = body;
+  const updatePayload: typeof restBody & {
+    taskTypeCode?: string;
+    taskTypeName?: string;
+    title?: string;
+  } = {
+    ...restBody,
+  };
+
+  if (taskTypeCode) {
+    const taskType = getTaskTypeByCode(taskTypeCode);
+
+    if (!taskType) {
+      throw new BadRequestException("Invalid task type selected.");
+    }
+
+    updatePayload.taskTypeCode = taskType.code;
+    updatePayload.taskTypeName = taskType.name;
+    updatePayload.title = `${taskType.code} - ${taskType.name}`;
+  }
+
   const updatedTask = await TaskModel.findByIdAndUpdate(
     taskId,
-    {
-      ...body,
-    },
+    updatePayload,
     { new: true }
   );
 
@@ -392,4 +411,64 @@ export const stopTaskTimerService = async (
   await task.save();
 
   return { task };
+};
+
+export const stopAllRunningTaskTimersService = async (
+  workspaceId: string,
+  userId: string
+) => {
+  const { role } = await getMemberRoleInWorkspace(userId, workspaceId);
+  const isPrivileged = role === Roles.OWNER || role === Roles.ADMIN;
+
+  if (!isPrivileged) {
+    throw new UnauthorizedException(
+      "Only admins can stop all running task timers."
+    );
+  }
+
+  const runningTasks = await TaskModel.find({
+    workspace: workspaceId,
+    isRunning: true,
+    activeStartAt: { $ne: null },
+  });
+
+  if (runningTasks.length === 0) {
+    return { stoppedCount: 0 };
+  }
+
+  const now = new Date();
+
+  await Promise.all(
+    runningTasks.map(async (task) => {
+      if (!task.activeStartAt) return;
+
+      const durationSeconds = Math.max(
+        1,
+        Math.floor((now.getTime() - task.activeStartAt.getTime()) / 1000)
+      );
+      const durationMinutes = Math.max(1, Math.floor(durationSeconds / 60));
+
+      await TaskWorkLogModel.create({
+        taskId: task._id,
+        userId: task.assignedTo ?? task.createdBy ?? userId,
+        startedAt: task.activeStartAt,
+        stoppedAt: now,
+        durationMinutes,
+        pagesCompleted: null,
+        remarks: null,
+      });
+
+      const currentSeconds =
+        task.totalSecondsSpent ?? (task.totalMinutesSpent ?? 0) * 60;
+      task.totalSecondsSpent = currentSeconds + durationSeconds;
+      task.totalMinutesSpent = Math.floor(task.totalSecondsSpent / 60);
+      task.lastStoppedAt = now;
+      task.isRunning = false;
+      task.activeStartAt = null;
+
+      await task.save();
+    })
+  );
+
+  return { stoppedCount: runningTasks.length };
 };

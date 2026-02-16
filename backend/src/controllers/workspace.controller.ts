@@ -276,7 +276,8 @@ export const deleteWorkspaceItemController = asyncHandler(
       throw new BadRequestException("File or folder path is required");
     }
 
-    await getMemberRoleInWorkspace(userId, workspaceId);
+    const { role } = await getMemberRoleInWorkspace(userId, workspaceId);
+    roleGuard(role, [Permissions.MANAGE_WORKSPACE_SETTINGS]);
 
     const deleted = await deleteWorkspaceItemService({
       workspaceId,

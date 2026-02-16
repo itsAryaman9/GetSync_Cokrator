@@ -18,6 +18,7 @@ import {
   getAllTasksService,
   getTaskByIdService,
   startTaskTimerService,
+  stopAllRunningTaskTimersService,
   stopTaskTimerService,
   updateTaskService,
   updateTaskStatusService,
@@ -192,6 +193,27 @@ export const stopTaskTimerController = asyncHandler(
     return res.status(HTTPSTATUS.OK).json({
       message: "Task timer stopped successfully",
       task,
+    });
+  }
+);
+
+
+export const stopAllRunningTaskTimersController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.user?._id;
+    const workspaceId = workspaceIdSchema.parse(req.params.workspaceId);
+
+    const { stoppedCount } = await stopAllRunningTaskTimersService(
+      workspaceId,
+      userId
+    );
+
+    return res.status(HTTPSTATUS.OK).json({
+      message:
+        stoppedCount > 0
+          ? `Stopped ${stoppedCount} running task timer${stoppedCount > 1 ? "s" : ""}.`
+          : "No running task timers found.",
+      stoppedCount,
     });
   }
 );

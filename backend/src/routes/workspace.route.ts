@@ -20,7 +20,14 @@ import {
 } from "../controllers/workspace.controller";
 
 const workspaceRoutes = Router();
-const upload = multer({ storage: multer.memoryStorage() });
+const MAX_UPLOAD_FILE_SIZE_BYTES = 200 * 1024 * 1024;
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: MAX_UPLOAD_FILE_SIZE_BYTES,
+    files: 100,
+  },
+});
 
 // To create a new workspace
 workspaceRoutes.post("/create/new", createWorkspaceController);

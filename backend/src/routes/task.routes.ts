@@ -5,6 +5,7 @@ import {
   getAllTasksController,
   getTaskByIdController,
   startTaskTimerController,
+  stopAllRunningTaskTimersController,
   stopTaskTimerController,
   updateTaskController,
 } from "../controllers/task.controller";
@@ -32,5 +33,6 @@ taskRoutes.get(
 
 taskRoutes.post("/:id/timer/start", startTaskTimerController);
 taskRoutes.post("/:id/timer/stop", stopTaskTimerController);
+taskRoutes.post("/workspace/:workspaceId/timer/stop-all", stopAllRunningTaskTimersController);
 
 export default taskRoutes;
