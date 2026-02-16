@@ -148,7 +148,7 @@ export default function CreateTaskForm(props: {
   });
 
   const taskStatusList = Object.values(TaskStatusEnum);
-  const taskPriorityList = Object.values(TaskPriorityEnum); // ["LOW", "MEDIUM", "HIGH", "URGENT"]
+  const taskPriorityList = Object.values(TaskPriorityEnum); // ["LOW", "MEDIUM", "HIGH"]
 
   const statusOptions = transformOptions(taskStatusList);
   const priorityOptions = transformOptions(taskPriorityList);
