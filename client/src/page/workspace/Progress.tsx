@@ -104,7 +104,6 @@ const toBadgeVariant = (value?: string | null): BadgeVariant => {
     case "LOW":
     case "MEDIUM":
     case "HIGH":
-    case "URGENT":
       return value;
     default:
       return "default";
